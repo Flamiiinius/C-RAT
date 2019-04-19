@@ -35,7 +35,7 @@ public class BDConnection {
             connect = DriverManager.getConnection(url,username,password);
 
         } catch (Exception e) {
-            System.out.println("SQLException: " + e.getMessage());
+            PrintLog("SQLException_Establishing_Connection");
         }
     }
 
@@ -53,7 +53,7 @@ public class BDConnection {
                 connect.close();
             }
         } catch (Exception e) {
-            System.out.println("SQLException: " + e.getMessage());
+            PrintLog("SQLException_Close_Connection");
         }
     }
 
@@ -78,7 +78,10 @@ public class BDConnection {
             }
 
         } catch (Exception e) {
+            PrintLog("Error: " + query);
             return null;
+        }finally {
+        close();
         }
 
         //this return statement will never happen
@@ -88,7 +91,6 @@ public class BDConnection {
 
     //called on Login
     public  void  getPasswordDetails(Domain.Authenticator myAuthenticator) throws Exception {
-        System.out.println("Fetching PasswordDetails of "+ myAuthenticator.getUserId());
         String query = "SELECT * from userpassword WHERE userId='" +  myAuthenticator.getUserId() + "'";
 
         try {
@@ -111,9 +113,7 @@ public class BDConnection {
     }
 
     //Building the user tree
-    public HashMap<Integer,User> getMultipleUsersById(User root){ //rever
-
-        System.out.println(root.getUserId());
+    public HashMap<Integer,User> getMultipleUsersById(User root){
 
         HashMap<Integer,User> userMap = new HashMap<>();
         userMap.put(root.getUserId(),root);
@@ -152,8 +152,7 @@ public class BDConnection {
                 userMap.put(userId,u);
             }
         } catch (Exception e) {
-            System.out.println("Error: " + query);
-            //e.printStackTrace();
+            PrintLog("Error: " + query);
         }finally {
             close();
         }
@@ -211,7 +210,7 @@ public class BDConnection {
             }
 
         } catch (Exception e) {
-            System.out.println("Error: " + query);
+            PrintLog("Error: " + query);
         }finally {
             close();
         }
@@ -243,13 +242,12 @@ public class BDConnection {
             ResultSet rs = preparedStatement.getGeneratedKeys();
             rs.next();
             int id = rs.getInt(1);
-            System.out.println("NewRisk_added: " + id);
 
             r =  new Risk(id,myNewRisk.getManagerId(),myNewRisk.getRiskOwnerId(),myNewRisk.getDescripton(),
                     myNewRisk.getAsset(),date);
 
         }catch (Exception e){
-            System.out.println("Error: " + query);
+            PrintLog("Error: " + query);
             return null;
         }finally {
             close();
@@ -273,12 +271,10 @@ public class BDConnection {
             preparedStatement.setDouble(5,updatedRisk.getCostYear());
             preparedStatement.setInt(6, updatedRisk.getRiskId());
             preparedStatement.executeUpdate();
-            System.out.println("Risk: "+ updatedRisk.getRiskId() + " updated.");
 
 
         }catch (Exception e){
-            System.out.println("Error: " + query);
-            //e.printStackTrace();
+            PrintLog("Error: " + query);
             return false;
         }finally {
             close();
@@ -294,10 +290,9 @@ public class BDConnection {
             establishConnection();
             preparedStatement = connect.prepareStatement(query);
             preparedStatement.executeUpdate();
-            System.out.println(query);
 
         }catch (Exception e){
-            System.out.println("ERROR: " + query);
+            PrintLog("ERROR: " + query);
             return false;
         }finally {
             close();
@@ -346,5 +341,11 @@ public class BDConnection {
         }
         return true;
     }
-
+    //Auxiliar method to print to LogFile
+    private void PrintLog(String logmessage){
+        java.util.Date date = new java.util.Date();
+        Timestamp ts=new Timestamp(date.getTime());
+        System.out.println( "[" + ts +"] " + logmessage);
+        return;
+    }
 }

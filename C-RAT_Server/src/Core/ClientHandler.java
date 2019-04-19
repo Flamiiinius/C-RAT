@@ -6,7 +6,7 @@ package Core;
  * MasterProject @SINTEF & @UiO
  * November 2018
  */
-
+//C_RAT imports
 import Domain.Authenticator;
 import Domain.Risk;
 import Domain.User;
@@ -16,15 +16,19 @@ import Messages.NewRisk;
 import Messages.SafeProtocol;
 import Util.Encryptor;
 import Util.Security;
+import sun.rmi.runtime.Log;
 
+//Java imports
 import javax.crypto.SealedObject;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.net.Socket;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 
@@ -45,7 +49,6 @@ public class ClientHandler extends Thread {
 
     //Constructor
     public ClientHandler(Socket s,ObjectInputStream in, ObjectOutputStream out){
-        System.out.println("Thread started");
         this.s = s;
         this.in = in;
         this.out = out;
@@ -66,18 +69,29 @@ public class ClientHandler extends Thread {
     @Override
     public void run(){
         boolean running=true;
-        Message msg;
+        Message msg; //Receive Users Requests
+
+        //User Information
+        User user = null;
         byte[] sessionHash=null;
         HashMap<Integer,User> userMap = null;
         HashMap<Integer,Risk> myRisks = null;
-        User user = null;
 
+        //LogFiles Auxiliar variables
+        long ThreadId = Thread.currentThread().getId();
+        Date date= new Date();
+        long timeSAux = date.getTime();
+
+
+        PrintLog("New Thread " + ThreadId);
         do{
-            System.out.println("Wait for Message");
             try {
                 msg = (Message) readInput(in);
                 if(msg != null){
-                    System.out.println("New Message arrived: " + msg.getCode() + "," + msg.getSafe());
+                    //
+                    PrintLog(ThreadId + " New_Message: " + msg.getCode());
+
+                    //Response msg to User
                     Message error_msg = new Message(404,msg.getSafe());
                     Message ack_msg = new Message(1000,msg.getSafe());
 
@@ -109,14 +123,10 @@ public class ClientHandler extends Thread {
                             if(valid){
                                 sessionHash = createHash(username,createSalt());
                                 loginMessage.setSessionHash(sessionHash);
-                                System.out.println("User: "+ user.getUserId() + " - " + user.getUsername()
-                                    + " Login successfully");
-
+                                PrintLog(ThreadId + " User_ID: " + user.getUserId() + " User_Name " + user.getUsername());
                                 BDConnection dbc = new BDConnection();
                                 userMap = dbc.getMultipleUsersById(user);
                                 userMap.put(0,user); //root will go to index 0;
-
-                                System.out.println(userMap);
                             }
 
                             sendObject(msg.getSafe(),loginMessage,out);
@@ -156,6 +166,7 @@ public class ClientHandler extends Thread {
                                     BDConnection dbc4 = new BDConnection();
                                     Risk r = dbc4.setNewRisk(newRisk);
                                     sendObject(msg.getSafe(),r,out);
+                                    PrintLog(" User_ID: " + user.getUserId() + " NEW_RISK_ID " + r.getRiskId());
                                     break;
                                 }
                             }
@@ -171,6 +182,7 @@ public class ClientHandler extends Thread {
                                     BDConnection dbc5 = new BDConnection();
                                     dbc5.setUpdatedRisk(updatedRisk);
                                     sendObject(msg.getSafe(),ack_msg,out);
+                                    PrintLog(" User_ID: " + user.getUserId() + " Update_RISK_ID " + updatedRisk.getRiskId());
                                     break;
                                 }
                             }
@@ -185,6 +197,7 @@ public class ClientHandler extends Thread {
                                     BDConnection dbc6 = new BDConnection();
                                     dbc6.deleteRisk(deleteRisk);
                                     sendObject(msg.getSafe(),ack_msg,out);
+                                    PrintLog(" User_ID: " + user.getUserId() + " Delete_RISK_ID " + deleteRisk.getRiskId());
                                     break;
                                 }
                             }
@@ -192,23 +205,11 @@ public class ClientHandler extends Thread {
                             sendObject(msg.getSafe(),error_msg,out);
                             break;
 
-                        case 300: //getNotifications
-
-                            if(sessionHash!=null && msg.getSessionHash()!=null){
-                                if (Arrays.equals(msg.getSessionHash(), sessionHash)) {
-                                   //TODO
-                                    break;
-                                }
-                            }
-                            
-                            sendObject(msg.getSafe(),error_msg,out);
-                            break;
 
                          case 400: //LogOut
-                            System.out.println("Client " + this.s + "send exit...");
-                            this.s.close();
-                            running=false;
-                             System.out.println("Logout:" + user.getUsername());
+                             PrintLog(" User_ID: " + user.getUserId() + " LOGOUT " + this.s);
+                             this.s.close();
+                             running=false;
                             break;
 
                         default:
@@ -220,7 +221,7 @@ public class ClientHandler extends Thread {
             } catch (Exception e) {
                 if(running != false){
                     running=false;
-                    System.out.println("forced close connection:" + s);
+                    PrintLog(" Foced_Close_Connection: " + s);
                 }
                 break;
             }
@@ -230,11 +231,16 @@ public class ClientHandler extends Thread {
         try {
             this.in.close();
             this.out.close();
+            PrintLog("Close Thread " + ThreadId);
         }catch(IOException e){
             System.out.println("error closing socket resources!");
         }
     }
 
+
+    //Below are Auxiliar methods, to help with tasks that affect most of the codes
+
+    //Auxiliar output method
     private void sendObject(boolean safe, Serializable o,ObjectOutputStream out) throws Exception {
         if(safe){
             out.writeObject(myEncryptor.encryptObject(o));
@@ -244,6 +250,7 @@ public class ClientHandler extends Thread {
 
     }
 
+    //Auxiliar input reading method
     private Object readInput(ObjectInputStream in) throws Exception {
         Object o=null;
         do{
@@ -256,4 +263,11 @@ public class ClientHandler extends Thread {
         return o;
     }
 
+    //Auxiliar method to print to LogFile
+    private void PrintLog(String logmessage){
+        Date date = new Date();
+        Timestamp ts=new Timestamp(date.getTime());
+        System.out.println( "[" + ts +"] " + logmessage);
+        return;
+    }
 }
