@@ -1,28 +1,27 @@
 # C-RAT
-Master Thesis Project, Server and Desktop Application for Risk Management
+Master Thesis Project, Server and Desktop Application for Cyber-Risk Management
 
-This Project is/was developed durign my master thesis (should end in June'19).
+This Project was developed durign my master thesis in collaboration with my supervisor at SINTEF
 
-Description Under Construction
-------------------
+
 Compile and run:
 --------------------
-With the arrival of Java11, the javaFX library was taken out of the core of java in version 9 and 10.
+With the arrival of Java11, the javaFX library was taken out of the core of java in versions 9 and 10.
 
-The Client needs either java 8 or java10+ with an javaFX module. (reccomended java8).
+The Client needs to run either in java 8 or java10+ with the javaFX module. (reccomended java8).
 The Server should run in the same java version as the client.
 
-The Server needs a MySql database in order to properrly function. (Will post a mockup DB ASAP).
+The Server needs a MySql database as shown in our mockup databse. 
 
 Installing:
 ---
 Server:
-- Create a Log files and update the path in the main file. (Server)
-- Create Datatabase;
-- Configure database name and password (DBConnection)
+- Create a Log files and update the path in the main file. (Server.java);
+- Create a Datatabase that comply with ours or create your database and make the necessary changes in the code;
+- Configure database name and password (DBConnection.java);
 
 Client:
-- Change Server IP and Port
+- Change Server IP and Port;
 
 Other Comments
 ---
@@ -32,10 +31,6 @@ change the risk and newrisk classes, and replace by your risk of choice.
 
 TODO:
 ---------------
-Update Unit tests
+- Create an admin page;
 
-Create an User Manual
-
-Create a page for the admin
-
-Change configurations to an .txt, instead of hard coded
+- Change configurations to an .txt, instead of hard coded;
